@@ -17,6 +17,9 @@ node_modules
 .settings/
 *.sublime-workspace
 
+# BD DATA SQLITE
+*.sqlite
+
 # IDE - VSCode
 .vscode/*
 .vscode/settings.json
