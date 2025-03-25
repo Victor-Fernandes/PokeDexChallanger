@@ -1,12 +1,10 @@
-import { Body, Controller, Post } from "@nestjs/common";
+import { Controller, Post } from "@nestjs/common";
 
 @Controller('pokedex')
 export class PokedexController {
-
-    constructor() {}
     
     @Post()
-    public async createPokemon() {
+    public async createPokemon(): Promise<string> {
         return 'create pokemon'
     }
 }

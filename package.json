@@ -4,7 +4,11 @@
   "license": "MIT",
   "scripts": {
     "start:pokedex:dev": "nx run backend:serve --watch --configuration=development",
-    "start:debug": "nx run backend:serve --watch --configuration=development --inspect"
+    "start:debug": "nx run backend:serve --watch --configuration=development --inspect",
+    "typeorm": "cd backend && npx typeorm-ts-node-commonjs",
+    "migration:generate": "npm run typeorm -- migration:generate src/infrastructure/persistence/migrations/CreatePokemonTable -d src/datasource.ts",
+    "migration:run": "npm run typeorm -- migration:run -d src/datasource.ts",
+    "migration:revert": "npm run typeorm -- migration:revert -d src/datasource.ts"
   },
   "private": true,
   "devDependencies": {
