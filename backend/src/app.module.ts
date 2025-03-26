@@ -9,6 +9,7 @@ import { PokemonApiService } from '@infrastructure/adapters/external/pokemon-api
 import { ConfigModule } from '@nestjs/config';
 import { PokemonRepository } from '@infrastructure/persistence/persistence/pokemon.repository';
 import { PokemonService } from '@application/services/pokemon-services';
+import { GeminiAdapter } from '@infrastructure/adapters/external/gemini.adapter';
 
 @Module({
   imports: [
@@ -35,6 +36,11 @@ import { PokemonService } from '@application/services/pokemon-services';
   providers: [
     PokemonApiService,
     PokemonRepository,
+    GeminiAdapter,
+    {
+      provide: 'IGeminiService',
+      useClass: GeminiAdapter,
+    },
     {
       provide: 'IPokemonRepository',
       useClass: PokemonRepository
@@ -45,10 +51,10 @@ import { PokemonService } from '@application/services/pokemon-services';
     },
     {
       provide: 'ICreatePokemonUseCase',
-      useFactory: (httpService: HttpService, pokeApiService: PokemonApiService, pokemonRepository: PokemonRepository) => {
-        return new CreatePokemonUseCase(pokeApiService, pokemonRepository);
+      useFactory: (pokeApiService: PokemonApiService, pokemonRepository: PokemonRepository, geminiService: GeminiAdapter) => {
+        return new CreatePokemonUseCase(pokeApiService, pokemonRepository, geminiService);
       },
-      inject: [HttpService, PokemonApiService, PokemonRepository]
+      inject: [PokemonApiService, PokemonRepository, GeminiAdapter]
     },
     {
       provide: 'IPokemonServiceInterface',

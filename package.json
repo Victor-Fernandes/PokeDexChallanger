@@ -48,6 +48,7 @@
 		"backend-e2e"
 	],
 	"dependencies": {
+		"@google/genai": "^0.6.1",
 		"@nestjs/axios": "^4.0.0",
 		"@nestjs/common": "^10.0.2",
 		"@nestjs/config": "^4.0.1",
