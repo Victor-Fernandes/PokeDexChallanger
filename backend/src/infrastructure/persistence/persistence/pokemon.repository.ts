@@ -92,4 +92,95 @@ export class PokemonRepository implements IPokemonRepository {
             throw error;
         }
     }
+    
+    async delete(id: string): Promise<boolean> {
+        this.logger.debug(`Tentando deletar Pokémon com ID: ${id}`);
+        
+        const queryRunner = this.dataSource.createQueryRunner();
+        
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+        
+        try {
+            const tempRepository = queryRunner.manager.getRepository(Pokemon);
+            
+            const pokemon = await tempRepository.findOne({ where: { id } });
+            
+            if (!pokemon) {
+                this.logger.debug(`Pokémon com ID ${id} não encontrado para deleção`);
+                await queryRunner.rollbackTransaction();
+                return false;
+            }
+            
+            await tempRepository.remove(pokemon);
+            this.logger.debug(`Pokémon com ID ${id} deletado com sucesso`);
+            
+            await queryRunner.commitTransaction();
+            return true;
+        } catch (error: unknown) {
+            const axiosError = error as AxiosError;
+            this.logger.error(`Erro ao deletar Pokémon: ${axiosError.message}`, axiosError.stack);
+            await queryRunner.rollbackTransaction();
+            throw error;
+        } finally {
+            await queryRunner.release();
+        }
+    }
+    
+    async update(id: string, pokemonData: Partial<Pokemon>): Promise<Pokemon | null> {
+        this.logger.debug(`Tentando atualizar Pokémon com ID: ${id}`);
+        this.logger.debug(`Dados para atualização: ${JSON.stringify(pokemonData)}`);
+        
+        const queryRunner = this.dataSource.createQueryRunner();
+        
+        await queryRunner.connect();
+        await queryRunner.startTransaction();
+        
+        try {
+            const tempRepository = queryRunner.manager.getRepository(Pokemon);
+            
+            const pokemon = await tempRepository.findOne({ where: { id } });
+            
+            if (!pokemon) {
+                this.logger.debug(`Pokémon com ID ${id} não encontrado para atualização`);
+                await queryRunner.rollbackTransaction();
+                return null;
+            }
+            
+            // Garantir que campos não permitidos não sejam alterados
+            const allowedUpdates: Partial<Pokemon> = {
+                description: pokemonData.description,
+                height: pokemonData.height,
+                weight: pokemonData.weight,
+                imageUrl: pokemonData.imageUrl,
+                moves: pokemonData.moves
+            };
+            
+            // Remover propriedades undefined
+            Object.keys(allowedUpdates).forEach(key => {
+                const typedKey = key as keyof typeof allowedUpdates;
+                if (allowedUpdates[typedKey] === undefined) {
+                    delete allowedUpdates[typedKey];
+                }
+            });
+            
+            // Mesclar as alterações com o pokemon existente
+            const updatedPokemon = await tempRepository.save({
+                ...pokemon,
+                ...allowedUpdates
+            });
+            
+            this.logger.debug(`Pokémon com ID ${id} atualizado com sucesso`);
+            
+            await queryRunner.commitTransaction();
+            return updatedPokemon;
+        } catch (error: unknown) {
+            const axiosError = error as AxiosError;
+            this.logger.error(`Erro ao atualizar Pokémon: ${axiosError.message}`, axiosError.stack);
+            await queryRunner.rollbackTransaction();
+            throw error;
+        } finally {
+            await queryRunner.release();
+        }
+    }
 }

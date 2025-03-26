@@ -1,8 +1,15 @@
 import { PokemonCreateDto } from "@application/dtos/pokemon-create.dto";
-import { ICreatePokemonUseCase, IFindAllPokemonUseCase, IFindOnePokemonUseCase } from "@domain/ports/interface/pokemon-use-case.interface";
+import { 
+    ICreatePokemonUseCase, 
+    IDeletePokemonUseCase, 
+    IFindAllPokemonUseCase, 
+    IFindOnePokemonUseCase,
+    IUpdatePokemonUseCase
+} from "@domain/ports/interface/pokemon-use-case.interface";
 import { PokemonCreateResponseDto } from "@application/dtos/pokemon-create.dto";
-import { Body, Controller, Get, Inject, Param, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Patch, Post } from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { PokemonUpdateDto } from "@application/dtos/pokemon-update.dto";
 
 @ApiTags('Pokedex')
 @Controller('pokedex')
@@ -13,7 +20,11 @@ export class PokedexController {
         @Inject('IFindOnePokemonUseCase')
         private readonly findOnePokemonUseCase: IFindOnePokemonUseCase,
         @Inject('IFindAllPokemonUseCase')
-        private readonly findAllPokemonUseCase: IFindAllPokemonUseCase
+        private readonly findAllPokemonUseCase: IFindAllPokemonUseCase,
+        @Inject('IDeletePokemonUseCase')
+        private readonly deletePokemonUseCase: IDeletePokemonUseCase,
+        @Inject('IUpdatePokemonUseCase')
+        private readonly updatePokemonUseCase: IUpdatePokemonUseCase
     ) {}
     
     @Post()
@@ -43,5 +54,30 @@ export class PokedexController {
     @ApiResponse({ status: 200, description: 'Lista de Pokémons', type: [PokemonCreateResponseDto] })
     public async findAll(): Promise<PokemonCreateResponseDto[]> {
         return this.findAllPokemonUseCase.execute();
+    }
+
+    @Delete(':id')
+    @HttpCode(204)
+    @ApiOperation({ summary: 'Deletar um Pokémon pelo ID' })
+    @ApiParam({ name: 'id', description: 'ID do Pokémon', type: String })
+    @ApiResponse({ status: 204, description: 'Pokémon deletado com sucesso' })
+    @ApiResponse({ status: 404, description: 'Pokémon não encontrado' })
+    public async delete(
+        @Param('id') id: string
+    ): Promise<void> {
+        return this.deletePokemonUseCase.execute(id);
+    }
+
+    @Patch(':id')
+    @ApiOperation({ summary: 'Atualizar um Pokémon pelo ID' })
+    @ApiParam({ name: 'id', description: 'ID do Pokémon', type: String })
+    @ApiResponse({ status: 200, description: 'Pokémon atualizado com sucesso', type: PokemonCreateResponseDto })
+    @ApiResponse({ status: 400, description: 'Dados inválidos' })
+    @ApiResponse({ status: 404, description: 'Pokémon não encontrado' })
+    public async update(
+        @Param('id') id: string,
+        @Body() pokemonUpdateDto: PokemonUpdateDto
+    ): Promise<PokemonCreateResponseDto> {
+        return this.updatePokemonUseCase.execute(id, pokemonUpdateDto);
     }
 }
