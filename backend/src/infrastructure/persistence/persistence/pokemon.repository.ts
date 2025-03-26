@@ -23,7 +23,6 @@ export class PokemonRepository implements IPokemonRepository {
         try {
             const tempRepository = queryRunner.manager.getRepository(Pokemon);
             
-            // Verificar se a tabela existe
             const tableExists = await queryRunner.hasTable('pokemons');
             this.logger.debug(`Tabela 'pokemons' existe? ${tableExists}`);
             
@@ -147,7 +146,6 @@ export class PokemonRepository implements IPokemonRepository {
                 return null;
             }
             
-            // Garantir que campos não permitidos não sejam alterados
             const allowedUpdates: Partial<Pokemon> = {
                 description: pokemonData.description,
                 height: pokemonData.height,
@@ -155,8 +153,7 @@ export class PokemonRepository implements IPokemonRepository {
                 imageUrl: pokemonData.imageUrl,
                 moves: pokemonData.moves
             };
-            
-            // Remover propriedades undefined
+        
             Object.keys(allowedUpdates).forEach(key => {
                 const typedKey = key as keyof typeof allowedUpdates;
                 if (allowedUpdates[typedKey] === undefined) {
@@ -164,7 +161,6 @@ export class PokemonRepository implements IPokemonRepository {
                 }
             });
             
-            // Mesclar as alterações com o pokemon existente
             const updatedPokemon = await tempRepository.save({
                 ...pokemon,
                 ...allowedUpdates

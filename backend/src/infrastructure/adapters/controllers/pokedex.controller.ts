@@ -1,11 +1,9 @@
 import { PokemonCreateDto } from "@application/dtos/pokemon-create.dto";
 import { 
     ICreatePokemonUseCase, 
-    IDeletePokemonUseCase, 
-    IFindAllPokemonUseCase, 
-    IFindOnePokemonUseCase,
     IUpdatePokemonUseCase
 } from "@domain/ports/interface/pokemon-use-case.interface";
+import { IPokemonServiceInterface } from "@domain/ports/interface/pokemon-service-interface";
 import { PokemonCreateResponseDto } from "@application/dtos/pokemon-create.dto";
 import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Patch, Post } from "@nestjs/common";
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
@@ -17,14 +15,10 @@ export class PokedexController {
     constructor(
         @Inject('ICreatePokemonUseCase')
         private readonly createPokemonUseCase: ICreatePokemonUseCase,
-        @Inject('IFindOnePokemonUseCase')
-        private readonly findOnePokemonUseCase: IFindOnePokemonUseCase,
-        @Inject('IFindAllPokemonUseCase')
-        private readonly findAllPokemonUseCase: IFindAllPokemonUseCase,
-        @Inject('IDeletePokemonUseCase')
-        private readonly deletePokemonUseCase: IDeletePokemonUseCase,
         @Inject('IUpdatePokemonUseCase')
-        private readonly updatePokemonUseCase: IUpdatePokemonUseCase
+        private readonly updatePokemonUseCase: IUpdatePokemonUseCase,
+        @Inject('IPokemonServiceInterface')
+        private readonly pokemonService: IPokemonServiceInterface
     ) {}
     
     @Post()
@@ -46,14 +40,14 @@ export class PokedexController {
     public async findOne(
         @Param('id') id: string
     ): Promise<PokemonCreateResponseDto> {
-        return this.findOnePokemonUseCase.execute(id);
+        return this.pokemonService.findOne(id);
     }
 
     @Get()
     @ApiOperation({ summary: 'Listar todos os Pokémons' })
     @ApiResponse({ status: 200, description: 'Lista de Pokémons', type: [PokemonCreateResponseDto] })
     public async findAll(): Promise<PokemonCreateResponseDto[]> {
-        return this.findAllPokemonUseCase.execute();
+        return this.pokemonService.findAll();
     }
 
     @Delete(':id')
@@ -65,7 +59,7 @@ export class PokedexController {
     public async delete(
         @Param('id') id: string
     ): Promise<void> {
-        return this.deletePokemonUseCase.execute(id);
+        return this.pokemonService.delete(id);
     }
 
     @Patch(':id')

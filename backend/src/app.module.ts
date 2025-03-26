@@ -3,12 +3,12 @@ import { PokedexController } from './infrastructure/adapters/controllers/pokedex
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { Pokemon } from './domain/entities/pokemon.entity';
 import { CreatePokemonUseCase } from '@application/use-cases/create-pokemon-use-case';
-import { FindOnePokemonUseCase } from '@application/use-cases/find-one-pokemon-use-case';
-import { FindAllPokemonUseCase } from '@application/use-cases/find-all-pokemon-use-case';
+import { UpdatePokemonUseCase } from '@application/use-cases/update-pokemon-use-case';
 import { HttpModule, HttpService } from '@nestjs/axios';
 import { PokemonApiService } from '@infrastructure/adapters/external/pokemon-api.service';
 import { ConfigModule } from '@nestjs/config';
 import { PokemonRepository } from '@infrastructure/persistence/persistence/pokemon.repository';
+import { PokemonService } from '@application/services/pokemon-services';
 
 @Module({
   imports: [
@@ -51,16 +51,16 @@ import { PokemonRepository } from '@infrastructure/persistence/persistence/pokem
       inject: [HttpService, PokemonApiService, PokemonRepository]
     },
     {
-      provide: 'IFindOnePokemonUseCase',
+      provide: 'IPokemonServiceInterface',
       useFactory: (pokemonRepository: PokemonRepository) => {
-        return new FindOnePokemonUseCase(pokemonRepository);
+        return new PokemonService(pokemonRepository);
       },
       inject: [PokemonRepository]
     },
     {
-      provide: 'IFindAllPokemonUseCase',
+      provide: 'IUpdatePokemonUseCase',
       useFactory: (pokemonRepository: PokemonRepository) => {
-        return new FindAllPokemonUseCase(pokemonRepository);
+        return new UpdatePokemonUseCase(pokemonRepository);
       },
       inject: [PokemonRepository]
     }

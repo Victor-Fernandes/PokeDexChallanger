@@ -16,7 +16,6 @@ export class UpdatePokemonUseCase implements IUpdatePokemonUseCase {
             throw new NotFoundException('ID de Pokémon não informado');
         }
 
-        // Garantir que apenas campos permitidos sejam enviados para atualização
         const updatedPokemon = await this.pokemonRepository.update(id, {
             description: pokemonUpdateDto.description,
             height: pokemonUpdateDto.height,
@@ -29,7 +28,6 @@ export class UpdatePokemonUseCase implements IUpdatePokemonUseCase {
             throw new NotFoundException(`Pokémon com ID ${id} não encontrado`);
         }
 
-        // Transformar o resultado para o formato DTO
         return {
             id: updatedPokemon.id,
             name: updatedPokemon.name,
