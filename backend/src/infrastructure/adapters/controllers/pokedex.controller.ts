@@ -5,9 +5,10 @@ import {
 } from "@domain/ports/interface/pokemon-use-case.interface";
 import { IPokemonServiceInterface } from "@domain/ports/interface/pokemon-service-interface";
 import { PokemonCreateResponseDto } from "@application/dtos/pokemon-create.dto";
-import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Patch, Post } from "@nestjs/common";
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from "@nestjs/swagger";
+import { Body, Controller, Delete, Get, HttpCode, Inject, Param, Patch, Post, Query } from "@nestjs/common";
+import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from "@nestjs/swagger";
 import { PokemonUpdateDto } from "@application/dtos/pokemon-update.dto";
+import { PokemonFilterDto, PokemonPaginatedResponseDto } from "@application/dtos/pokemon-findall.dtos";
 
 @ApiTags('Pokedex')
 @Controller('pokedex')
@@ -44,10 +45,14 @@ export class PokedexController {
     }
 
     @Get()
-    @ApiOperation({ summary: 'Listar todos os Pokémons' })
-    @ApiResponse({ status: 200, description: 'Lista de Pokémons', type: [PokemonCreateResponseDto] })
-    public async findAll(): Promise<PokemonCreateResponseDto[]> {
-        return this.pokemonService.findAll();
+    @ApiOperation({ summary: 'Listar todos os Pokémons com paginação e filtros' })
+    @ApiResponse({ status: 200, description: 'Lista paginada de Pokémons', type: PokemonPaginatedResponseDto })
+    @ApiQuery({ name: 'page', required: false, description: 'Número da página (padrão: 1)', type: Number })
+    @ApiQuery({ name: 'itemsPerPage', required: false, description: 'Itens por página (padrão: 5)', type: Number })
+    @ApiQuery({ name: 'name', required: false, description: 'Filtrar por nome', type: String })
+    @ApiQuery({ name: 'type', required: false, description: 'Filtrar por tipo', type: String })
+    public async findAll(@Query() filterDto: PokemonFilterDto): Promise<PokemonPaginatedResponseDto> {
+        return this.pokemonService.findAll(filterDto);
     }
 
     @Delete(':id')

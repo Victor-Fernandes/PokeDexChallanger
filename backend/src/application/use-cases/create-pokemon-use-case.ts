@@ -23,6 +23,7 @@ export class CreatePokemonUseCase implements ICreatePokemonUseCase {
 
         const pokemonData = await this.pokeApiService.getPokemonByName(pokemonCreateDto.name);
 
+        await this.existsPokemon(pokemonData.name);
         const types: string[] = this.mapPokemonTypes(pokemonData);
         
         const moves: string[] = this.mapPokemonMoves(pokemonData);
@@ -69,5 +70,11 @@ export class CreatePokemonUseCase implements ICreatePokemonUseCase {
         return pokemonData.moves
             .slice(0, 5)
             .map((move: { move: { name: string } }) => move.move.name);
+    }
+
+    private async existsPokemon(name: string): Promise<string | void> {
+        const pokemon = await this.pokemonRepository.findOneByName(name);
+        
+        if (pokemon) throw new BadRequestException('Pokemon já existe na base de dados!');
     }
 } 

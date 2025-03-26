@@ -1,4 +1,5 @@
 import { PokemonCreateResponseDto } from "@application/dtos/pokemon-create.dto";
+import { PokemonFilterDto, PokemonPaginatedResponseDto } from "@application/dtos/pokemon-findall.dtos";
 import { IPokemonRepository } from "@domain/ports/interface/pokemon-repository.interface";
 import { IPokemonServiceInterface } from "@domain/ports/interface/pokemon-service-interface";
 import { Inject, Injectable, NotFoundException } from "@nestjs/common";
@@ -34,20 +35,28 @@ export class PokemonService implements IPokemonServiceInterface {
           };
       }
 
-  public async findAll(): Promise<PokemonCreateResponseDto[]> {
-        const pokemons = await this.pokemonRepository.findAll();
+  public async findAll(filterDto: PokemonFilterDto = { page: 1, itemsPerPage: 5 }): Promise<PokemonPaginatedResponseDto> {
+        const result =  await this.pokemonRepository.findAll(filterDto);
 
-        return pokemons.map(pokemon => ({
+        const pokemonDtos = result.items.map(pokemon => ({
             id: pokemon.id,
             name: pokemon.name,
-            types: pokemon.types,
             pokemon_number: pokemon.pokemon_number,
-            moves: pokemon.moves,
+            types: pokemon.types,
             description: pokemon.description ?? 'Descrição não disponível',
             height: pokemon.height ?? 0,
             weight: pokemon.weight ?? 0,
-            imageUrl: pokemon.imageUrl ?? ''
-        }));
+            imageUrl: pokemon.imageUrl ?? '',
+            moves: pokemon.moves
+        } as PokemonCreateResponseDto));
+
+        return {
+            data: pokemonDtos,
+            page: result.page,
+            itemsPerPage: result.itemsPerPage,
+            totalPages: result.totalPages,
+            total: result.total
+        };
     }
 
     public async delete(id: string): Promise<void> {

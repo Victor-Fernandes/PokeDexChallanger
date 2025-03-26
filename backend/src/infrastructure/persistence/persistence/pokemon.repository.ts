@@ -1,8 +1,9 @@
 import { Pokemon } from "@domain/entities/pokemon.entity";
 import { DataSource } from "typeorm";
-import { IPokemonRepository } from "@domain/ports/interface/pokemon-repository.interface";
+import { IPokemonRepository, PaginatedResult } from "@domain/ports/interface/pokemon-repository.interface";
 import { Injectable, Inject, Logger } from "@nestjs/common";
 import { AxiosError } from "axios";
+import { PokemonFilterDto } from "@application/dtos/pokemon-findall.dtos";
 
 @Injectable()
 export class PokemonRepository implements IPokemonRepository {
@@ -13,7 +14,7 @@ export class PokemonRepository implements IPokemonRepository {
         private readonly dataSource: DataSource
     ) {}
 
-    async save(pokemon: Pokemon): Promise<Pokemon> {
+    public async save(pokemon: Pokemon): Promise<Pokemon> {
         this.logger.debug(`Tentando salvar Pokémon: ${JSON.stringify(pokemon)}`);
         const queryRunner = this.dataSource.createQueryRunner();
         
@@ -47,7 +48,7 @@ export class PokemonRepository implements IPokemonRepository {
         }
     }
 
-    async findOne(id: string): Promise<Pokemon | null> {
+    public async findOne(id: string): Promise<Pokemon | null> {
         this.logger.debug(`Buscando Pokémon com ID: ${id}`);
         
         try {
@@ -71,20 +72,49 @@ export class PokemonRepository implements IPokemonRepository {
         }
     }
     
-    async findAll(): Promise<Pokemon[]> {
-        this.logger.debug('Buscando todos os Pokémons');
+    public async findAll(filterDto: PokemonFilterDto): Promise<PaginatedResult<Pokemon>> {
+
+        const { page = 1, itemsPerPage = 5, name, type } = filterDto
+
+        this.logger.debug(`Buscando Pokémons com filtros: page=${page}, itemsPerPage=${itemsPerPage}, name=${name || 'todos'}, type=${type || 'todos'}`);
         
         try {
             const repository = this.dataSource.getRepository(Pokemon);
             
-            const pokemons = await repository.find({
-                order: {
-                    pokemon_number: 'ASC'
-                }
-            });
+            const queryBuilder = repository.createQueryBuilder('pokemon');
+
+            if (name) {
+                queryBuilder.andWhere('pokemon.name LIKE :name', { 
+                    name: `%${name}%` 
+                });
+            }
+
+            if (type) {
+                queryBuilder.andWhere('pokemon.types LIKE :type', { 
+                    type: `%${type}%` 
+                });
+            }
+ 
+            const total = await queryBuilder.getCount();
             
-            this.logger.debug(`Encontrados ${pokemons.length} Pokémons`);
-            return pokemons;
+            const totalPages = Math.ceil(total / itemsPerPage);
+            
+            queryBuilder
+                .orderBy('pokemon.pokemon_number', 'ASC')
+                .skip((page - 1) * itemsPerPage)
+                .take(itemsPerPage);
+            
+            const pokemons = await queryBuilder.getMany();
+            
+            this.logger.debug(`Encontrados ${pokemons.length} Pokémons (total de ${total})`);
+            
+            return {
+                items: pokemons,
+                total,
+                page,
+                itemsPerPage,
+                totalPages
+            }
         } catch (error: unknown) {
             const axiosError = error as AxiosError;
             this.logger.error(`Erro ao buscar todos os Pokémons: ${axiosError.message}`, axiosError.stack);
@@ -92,7 +122,7 @@ export class PokemonRepository implements IPokemonRepository {
         }
     }
     
-    async delete(id: string): Promise<boolean> {
+    public async delete(id: string): Promise<boolean> {
         this.logger.debug(`Tentando deletar Pokémon com ID: ${id}`);
         
         const queryRunner = this.dataSource.createQueryRunner();
@@ -126,7 +156,7 @@ export class PokemonRepository implements IPokemonRepository {
         }
     }
     
-    async update(id: string, pokemonData: Partial<Pokemon>): Promise<Pokemon | null> {
+    public async update(id: string, pokemonData: Partial<Pokemon>): Promise<Pokemon | null> {
         this.logger.debug(`Tentando atualizar Pokémon com ID: ${id}`);
         this.logger.debug(`Dados para atualização: ${JSON.stringify(pokemonData)}`);
         
@@ -177,6 +207,30 @@ export class PokemonRepository implements IPokemonRepository {
             throw error;
         } finally {
             await queryRunner.release();
+        }
+    }
+
+    public async findOneByName(name: string): Promise<Pokemon | null> {
+        this.logger.debug(`Buscando Pokémon com ID: ${name}`);
+        
+        try {
+            const repository = this.dataSource.getRepository(Pokemon);
+            
+            const pokemon = await repository.findOne({ 
+                where: { name } 
+            });
+            
+            if (!pokemon) {
+                this.logger.debug(`Pokémon com ID ${name} não encontrado`);
+                return null;
+            }
+            
+            this.logger.debug(`Pokémon encontrado: ${JSON.stringify(pokemon)}`);
+            return pokemon;
+        } catch (error: unknown) {
+            const axiosError = error as AxiosError;
+            this.logger.error(`Erro ao buscar Pokémon: ${axiosError.message}`, axiosError.stack);
+            throw error;
         }
     }
 }
