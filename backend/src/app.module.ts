@@ -12,12 +12,23 @@ import { PokemonService } from '@application/services/pokemon-services';
 import { GeminiAdapter } from '@infrastructure/adapters/external/gemini.adapter';
 import { CacheModule } from '@nestjs/cache-manager';
 import { CacheManagerAdapter } from '@infrastructure/adapters/cache/cache-manager.adapter';
+import { ThrottlerModule } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard } from '@nestjs/throttler';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
       envFilePath: '.env',
+    }),
+    ThrottlerModule.forRoot({
+      throttlers: [
+        {
+          ttl: 60,
+          limit: 10,
+        },
+      ],
     }),
     CacheModule.register({
       isGlobal: true,
@@ -81,7 +92,11 @@ import { CacheManagerAdapter } from '@infrastructure/adapters/cache/cache-manage
         return new UpdatePokemonUseCase(pokemonRepository, cacheManager);
       },
       inject: [PokemonRepository, CacheManagerAdapter]
-    }
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
   ],
 })
 export class AppModule {}
