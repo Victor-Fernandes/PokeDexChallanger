@@ -18,17 +18,10 @@ export class GeminiAdapter implements IGeminiService {
         this.genAi = new GoogleGenAI({ apiKey }); 
     }
 
-    async correctPokemon(pokemonName: string): Promise<string | undefined> {
+    public async correctPokemon(pokemonName: string): Promise<string | undefined> {
         this.logger.debug(`Verificando se o nome do Pokémon está correto: ${pokemonName}`);
         
         try {
-            const generationConfig = {
-                temperature: 0.1,
-                topK: 1,
-                topP: 0.95,
-                maxOutputTokens: 200,
-            };
-
             const prompt = `
             Você é um especialista em Pokémon. Analise o nome "${pokemonName}" e determine:
             
@@ -48,6 +41,38 @@ export class GeminiAdapter implements IGeminiService {
             this.logger.debug(`Resposta do Gemini: "${response}" para entrada: "${pokemonName}"`);
             
             return response === "Desconhecido" ? pokemonName : response;
+        } catch (error: unknown) {
+            const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+            this.logger.error(`Erro ao verificar nome do Pokémon com Gemini: ${errorMessage}`);
+
+            return pokemonName;
+        }
+    }
+
+    public async createDescription(pokemonName: string): Promise<string | undefined> {
+        this.logger.debug(`criando a descricao para o pokemon: ${pokemonName}`);
+        
+        try {
+            const prompt = `
+            Você é um especialista em Pokémon. Crie uma descrição concisa e interessante para o Pokémon "${pokemonName}".
+            
+            A descrição deve:
+            1. Ter apenas uma linha (máximo 150 caracteres)
+            2. Mencionar características marcantes do Pokémon
+            3. Ser informativa e precisa
+            
+            Responda APENAS com a descrição, sem explicações adicionais.
+            `
+
+            const result = await this.genAi.models.generateContent({
+                model: this.model,
+                contents: prompt,
+            });
+            const response = result.text;
+            
+            this.logger.debug(`Resposta do Gemini: "${response}" para entrada: "${pokemonName}"`);
+            
+            return response;
         } catch (error: unknown) {
             const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
             this.logger.error(`Erro ao verificar nome do Pokémon com Gemini: ${errorMessage}`);

@@ -35,6 +35,8 @@ export class CreatePokemonUseCase implements ICreatePokemonUseCase {
         const pokemonData = await this.pokeApiService.getPokemonByName(pokemonCreateDto.name);
 
         await this.existsPokemon(pokemonData.name);
+        
+        const description = await this.geminiService.createDescription(pokemonData.name);
         const types: string[] = this.mapPokemonTypes(pokemonData);
         
         const moves: string[] = this.mapPokemonMoves(pokemonData);
@@ -48,7 +50,7 @@ export class CreatePokemonUseCase implements ICreatePokemonUseCase {
                 height: pokemonData.height,
                 weight: pokemonData.weight,
                 imageUrl: pokemonData.sprites?.other?.['official-artwork']?.front_default || pokemonData.sprites?.front_default || '',
-                description: 'Descrição do pokemon: Esperando integração com o Gemini'
+                description: description
             }
         );
 
