@@ -5,6 +5,7 @@ import { IPokeApiService } from "@domain/ports/interface/pokemon-external-servic
 import { PokemonApiResponseDto } from "@application/dtos/poke-api-response.dto";
 import { IPokemonRepository } from "@domain/ports/interface/pokemon-repository.interface";
 import { Pokemon } from "@domain/entities/pokemon.entity";
+import { IGeminiService } from "@domain/ports/interface/gemini-service-interface";
 import { ICacheService } from "@domain/ports/interface/cache-service.interface";
 
 export class CreatePokemonUseCase implements ICreatePokemonUseCase {
@@ -15,6 +16,8 @@ export class CreatePokemonUseCase implements ICreatePokemonUseCase {
         private readonly pokeApiService: IPokeApiService,
         @Inject('IPokemonRepository')
         private readonly pokemonRepository: IPokemonRepository,
+        @Inject('IGeminiService')
+        private readonly geminiService: IGeminiService,
         @Inject('ICacheService')
         private readonly cacheService: ICacheService
     ) {}
@@ -25,9 +28,19 @@ export class CreatePokemonUseCase implements ICreatePokemonUseCase {
             throw new BadRequestException('Dados inválidos');
         }
 
+        this.logger.debug(`Verificando se o nome do Pokémon está correto: ${pokemonCreateDto.name}`);
+        const correctedName = await this.geminiService.correctPokemon(pokemonCreateDto.name);
+
+        if(correctedName !== undefined && correctedName !== pokemonCreateDto.name) {
+            this.logger.debug(`Nome do Pokémon corrigido: "${pokemonCreateDto.name}" -> "${correctedName}"`);
+            pokemonCreateDto.name = correctedName;
+        }
+
         const pokemonData = await this.pokeApiService.getPokemonByName(pokemonCreateDto.name);
 
         await this.existsPokemon(pokemonData.name);
+        
+        const description = await this.geminiService.createDescription(pokemonData.name);
         const types: string[] = this.mapPokemonTypes(pokemonData);
         
         const moves: string[] = this.mapPokemonMoves(pokemonData);
@@ -41,7 +54,7 @@ export class CreatePokemonUseCase implements ICreatePokemonUseCase {
                 height: pokemonData.height,
                 weight: pokemonData.weight,
                 imageUrl: pokemonData.sprites?.other?.['official-artwork']?.front_default || pokemonData.sprites?.front_default || '',
-                description: 'Descrição do pokemon: Esperando integração com o Gemini'
+                description: description
             }
         );
 

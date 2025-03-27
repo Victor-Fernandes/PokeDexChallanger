@@ -4,11 +4,12 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Pokemon } from './domain/entities/pokemon.entity';
 import { CreatePokemonUseCase } from '@application/use-cases/create-pokemon-use-case';
 import { UpdatePokemonUseCase } from '@application/use-cases/update-pokemon-use-case';
-import { HttpModule, HttpService } from '@nestjs/axios';
+import { HttpModule } from '@nestjs/axios';
 import { PokemonApiService } from '@infrastructure/adapters/external/pokemon-api.service';
 import { ConfigModule } from '@nestjs/config';
 import { PokemonRepository } from '@infrastructure/persistence/persistence/pokemon.repository';
 import { PokemonService } from '@application/services/pokemon-services';
+import { GeminiAdapter } from '@infrastructure/adapters/external/gemini.adapter';
 import { CacheModule } from '@nestjs/cache-manager';
 import { CacheManagerAdapter } from '@infrastructure/adapters/cache/cache-manager.adapter';
 
@@ -42,6 +43,11 @@ import { CacheManagerAdapter } from '@infrastructure/adapters/cache/cache-manage
   providers: [
     PokemonApiService,
     PokemonRepository,
+    GeminiAdapter,
+    {
+      provide: 'IGeminiService',
+      useClass: GeminiAdapter,
+    },
     CacheManagerAdapter,
     {
       provide: 'ICacheService',
@@ -57,10 +63,10 @@ import { CacheManagerAdapter } from '@infrastructure/adapters/cache/cache-manage
     },
     {
       provide: 'ICreatePokemonUseCase',
-      useFactory: (httpService: HttpService, pokeApiService: PokemonApiService, pokemonRepository: PokemonRepository, cacheManager: CacheManagerAdapter) => {
-        return new CreatePokemonUseCase(pokeApiService, pokemonRepository, cacheManager);
+      useFactory: (pokeApiService: PokemonApiService, pokemonRepository: PokemonRepository, cacheManager: CacheManagerAdapter,  geminiService: GeminiAdapter) => {
+        return new CreatePokemonUseCase(pokeApiService, pokemonRepository, geminiService, cacheManager);
       },
-      inject: [HttpService, PokemonApiService, PokemonRepository, CacheManagerAdapter]
+      inject: [PokemonApiService, PokemonRepository, CacheManagerAdapter, GeminiAdapter]
     },
     {
       provide: 'IPokemonServiceInterface',
