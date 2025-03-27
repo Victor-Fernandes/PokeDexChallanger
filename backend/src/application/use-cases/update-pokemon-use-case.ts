@@ -1,14 +1,18 @@
-import { Inject, Injectable, NotFoundException } from "@nestjs/common";
+import { Inject, Injectable, NotFoundException, Logger } from "@nestjs/common";
 import { IUpdatePokemonUseCase } from "@domain/ports/interface/pokemon-use-case.interface";
 import { IPokemonRepository } from "@domain/ports/interface/pokemon-repository.interface";
 import { PokemonUpdateDto } from "@application/dtos/pokemon-update.dto";
 import { PokemonCreateResponseDto } from "@application/dtos/pokemon-create.dto";
+import { ICacheService } from "@domain/ports/interface/cache-service.interface";
 
 @Injectable()
 export class UpdatePokemonUseCase implements IUpdatePokemonUseCase {
+    private readonly logger = new Logger(UpdatePokemonUseCase.name)
     constructor(
         @Inject('IPokemonRepository')
-        private readonly pokemonRepository: IPokemonRepository
+        private readonly pokemonRepository: IPokemonRepository,
+        @Inject('ICacheService')
+        private readonly cacheService: ICacheService
     ) {}
 
     async execute(id: string, pokemonUpdateDto: PokemonUpdateDto): Promise<PokemonCreateResponseDto> {
@@ -26,6 +30,13 @@ export class UpdatePokemonUseCase implements IUpdatePokemonUseCase {
 
         if (!updatedPokemon) {
             throw new NotFoundException(`Pokémon com ID ${id} não encontrado`);
+        }
+
+         try {
+            await this.cacheService.reset();
+            this.logger.log('Cache invalidado após atualização de Pokémon');
+        } catch (error) {
+            this.logger.error('Erro ao invalidar cache', error);
         }
 
         return {

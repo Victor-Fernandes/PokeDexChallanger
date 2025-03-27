@@ -6,16 +6,20 @@ import { PokemonApiResponseDto } from "@application/dtos/poke-api-response.dto";
 import { IPokemonRepository } from "@domain/ports/interface/pokemon-repository.interface";
 import { Pokemon } from "@domain/entities/pokemon.entity";
 import { IGeminiService } from "@domain/ports/interface/gemini-service-interface";
+import { ICacheService } from "@domain/ports/interface/cache-service.interface";
 
 export class CreatePokemonUseCase implements ICreatePokemonUseCase {
     private readonly logger = new Logger(CreatePokemonUseCase.name);
+
     constructor(
         @Inject('IPokeApiService') 
         private readonly pokeApiService: IPokeApiService,
         @Inject('IPokemonRepository')
         private readonly pokemonRepository: IPokemonRepository,
         @Inject('IGeminiService')
-        private readonly geminiService: IGeminiService
+        private readonly geminiService: IGeminiService,
+        @Inject('ICacheService')
+        private readonly cacheService: ICacheService
     ) {}
 
     async execute(pokemonCreateDto: PokemonCreateDto): Promise<PokemonCreateResponseDto> {
@@ -55,6 +59,13 @@ export class CreatePokemonUseCase implements ICreatePokemonUseCase {
         );
 
         const savedPokemon = await this.pokemonRepository.save(pokemon);
+
+        try {
+            await this.cacheService.reset();
+            this.logger.log('Cache invalidado após criação de Pokémon');
+        } catch (error) {
+            this.logger.error('Erro ao invalidar cache', error);
+        }
         
         return {
             id: savedPokemon.id,

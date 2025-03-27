@@ -4,12 +4,14 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { Pokemon } from './domain/entities/pokemon.entity';
 import { CreatePokemonUseCase } from '@application/use-cases/create-pokemon-use-case';
 import { UpdatePokemonUseCase } from '@application/use-cases/update-pokemon-use-case';
-import { HttpModule, HttpService } from '@nestjs/axios';
+import { HttpModule } from '@nestjs/axios';
 import { PokemonApiService } from '@infrastructure/adapters/external/pokemon-api.service';
 import { ConfigModule } from '@nestjs/config';
 import { PokemonRepository } from '@infrastructure/persistence/persistence/pokemon.repository';
 import { PokemonService } from '@application/services/pokemon-services';
 import { GeminiAdapter } from '@infrastructure/adapters/external/gemini.adapter';
+import { CacheModule } from '@nestjs/cache-manager';
+import { CacheManagerAdapter } from '@infrastructure/adapters/cache/cache-manager.adapter';
 
 @Module({
   imports: [
@@ -17,12 +19,17 @@ import { GeminiAdapter } from '@infrastructure/adapters/external/gemini.adapter'
       isGlobal: true,
       envFilePath: '.env',
     }),
+    CacheModule.register({
+      isGlobal: true,
+      ttl: 300,
+      max: 100,
+    }),
     TypeOrmModule.forRoot({
       type: 'sqlite',
       database: 'data/pokedex.sqlite',
       entities: [Pokemon],
-      synchronize: true, // Habilitado temporariamente para criar a tabela
-      migrationsRun: false, // Desabilitado temporariamente para evitar conflitos
+      synchronize: true,
+      migrationsRun: false,
       migrations: [__dirname + '/../infrastructure/persistence/migrations/**/*.{ts,js}'],
       migrationsTableName: 'migrations',
     }),
@@ -41,6 +48,11 @@ import { GeminiAdapter } from '@infrastructure/adapters/external/gemini.adapter'
       provide: 'IGeminiService',
       useClass: GeminiAdapter,
     },
+    CacheManagerAdapter,
+    {
+      provide: 'ICacheService',
+      useClass: CacheManagerAdapter
+    },
     {
       provide: 'IPokemonRepository',
       useClass: PokemonRepository
@@ -51,24 +63,24 @@ import { GeminiAdapter } from '@infrastructure/adapters/external/gemini.adapter'
     },
     {
       provide: 'ICreatePokemonUseCase',
-      useFactory: (pokeApiService: PokemonApiService, pokemonRepository: PokemonRepository, geminiService: GeminiAdapter) => {
-        return new CreatePokemonUseCase(pokeApiService, pokemonRepository, geminiService);
+      useFactory: (pokeApiService: PokemonApiService, pokemonRepository: PokemonRepository, cacheManager: CacheManagerAdapter,  geminiService: GeminiAdapter) => {
+        return new CreatePokemonUseCase(pokeApiService, pokemonRepository, geminiService, cacheManager);
       },
-      inject: [PokemonApiService, PokemonRepository, GeminiAdapter]
+      inject: [PokemonApiService, PokemonRepository, CacheManagerAdapter, GeminiAdapter]
     },
     {
       provide: 'IPokemonServiceInterface',
-      useFactory: (pokemonRepository: PokemonRepository) => {
-        return new PokemonService(pokemonRepository);
+      useFactory: (pokemonRepository: PokemonRepository, cacheManager: CacheManagerAdapter) => {
+        return new PokemonService(pokemonRepository, cacheManager);
       },
-      inject: [PokemonRepository]
+      inject: [PokemonRepository, CacheManagerAdapter]
     },
     {
       provide: 'IUpdatePokemonUseCase',
-      useFactory: (pokemonRepository: PokemonRepository) => {
-        return new UpdatePokemonUseCase(pokemonRepository);
+      useFactory: (pokemonRepository: PokemonRepository, cacheManager: CacheManagerAdapter) => {
+        return new UpdatePokemonUseCase(pokemonRepository, cacheManager);
       },
-      inject: [PokemonRepository]
+      inject: [PokemonRepository, CacheManagerAdapter]
     }
   ],
 })
