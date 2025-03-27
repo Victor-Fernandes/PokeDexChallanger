@@ -6,7 +6,7 @@ A full-stack Pokémon management application built with NestJS and React in an N
 
 This project is structured as a monorepo using NX, containing both backend and frontend applications:
 
-- **Backend**: NestJS application with a clean/hexagonal architecture
+- **Backend**: NestJS application with a hexagonal architecture
 - **Frontend**: React application with TypeScript and modern component structure
 
 ## Technologies Used
