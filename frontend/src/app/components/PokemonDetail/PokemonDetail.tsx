@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Pokemon } from '../../interfaces/pokemon.interface';
+import PokemonEditForm from '../PokemonEditForm/PokemonEditForm';
 import './PokemonDetail.css';
 
 interface PokemonDetailProps {
@@ -8,10 +9,27 @@ interface PokemonDetailProps {
 }
 
 const PokemonDetail: React.FC<PokemonDetailProps> = ({ pokemon, onClose }) => {
+  const [showEditForm, setShowEditForm] = useState(false);
+  
   if (!pokemon) {
     return null;
   }
   
+  const handleEditClick = () => {
+    setShowEditForm(true);
+  };
+  
+  const handleEditCancel = () => {
+    setShowEditForm(false);
+  };
+  
+  const handlePokemonUpdated = () => {
+    setShowEditForm(false);
+    // Idealmente, deveríamos atualizar o Pokémon no estado do PokemonList
+    // Mas para simplificar, vamos apenas fechar o modal
+    onClose();
+  };
+
   return (
     <div className="pokemon-detail-overlay">
       <div className="pokemon-detail-modal">
@@ -26,14 +44,12 @@ const PokemonDetail: React.FC<PokemonDetailProps> = ({ pokemon, onClose }) => {
             <div className="pokemon-detail-image">
               <img src={pokemon.imageUrl} alt={`Pokémon ${pokemon.name}`} />
             </div>
-            
-            <div className="pokemon-detail-basic-info">
-              <h2>#{pokemon.pokemon_number} {pokemon.name}</h2>
-              
-              {}
-              <div className="pokemon-detail-types">
+            <div className="pokemon-detail-info">
+              <h2>{pokemon.name}</h2>
+              <p className="pokemon-number">#{pokemon.pokemon_number}</p>
+              <div className="pokemon-types">
                 {pokemon.types.map((type, index) => (
-                  <span key={index} className={`type ${type.toLowerCase()}`}>
+                  <span key={index} className={`type-badge ${type}`}>
                     {type}
                   </span>
                 ))}
@@ -41,30 +57,51 @@ const PokemonDetail: React.FC<PokemonDetailProps> = ({ pokemon, onClose }) => {
             </div>
           </div>
           
-          {}
-          <div className="pokemon-detail-description">
-            <h3>Descrição</h3>
-            <p>{pokemon.description}</p>
+          <div className="pokemon-detail-body">
+            <div className="pokemon-description">
+              <h3>Descrição</h3>
+              <p>{pokemon.description}</p>
+            </div>
+            
+            <div className="pokemon-stats">
+              <div className="stat">
+                <span className="stat-label">Altura:</span>
+                <span className="stat-value">{pokemon.height / 10} m</span>
+              </div>
+              <div className="stat">
+                <span className="stat-label">Peso:</span>
+                <span className="stat-value">{pokemon.weight / 10} kg</span>
+              </div>
+            </div>
+            
+            <div className="pokemon-moves">
+              <h3>Movimentos</h3>
+              <ul>
+                {pokemon.moves.map((move, index) => (
+                  <li key={index}>{move}</li>
+                ))}
+              </ul>
+            </div>
           </div>
           
-          {}
-          <div className="pokemon-detail-physical">
-            <h3>Características Físicas</h3>
-            <p><strong>Altura:</strong> {pokemon.height / 10}m</p>
-            <p><strong>Peso:</strong> {pokemon.weight / 10}kg</p>
-          </div>
-          
-          {}
-          <div className="pokemon-detail-moves">
-            <h3>Movimentos</h3>
-            <ul>
-              {pokemon.moves.map((move: string, index: number) => (
-                <li key={index}>{move}</li>
-              ))}
-            </ul>
+          <div className="pokemon-detail-actions">
+            <button 
+              className="edit-button" 
+              onClick={handleEditClick}
+            >
+              Editar Pokémon
+            </button>
           </div>
         </div>
       </div>
+      
+      {showEditForm && (
+        <PokemonEditForm 
+          pokemon={pokemon}
+          onPokemonUpdated={handlePokemonUpdated}
+          onCancel={handleEditCancel}
+        />
+      )}
     </div>
   );
 };

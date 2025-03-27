@@ -283,4 +283,62 @@ export class PokemonService {
       throw error;
     }
   }
+
+  /**
+   * Atualiza um Pokémon existente
+   * 
+   * @param id ID do Pokémon a ser atualizado
+   * @param pokemonData Dados do Pokémon para atualização
+   * @returns Promise com os dados do Pokémon atualizado
+   */
+  async updatePokemon(id: string, pokemonData: Partial<Pokemon>): Promise<Pokemon> {
+    if (this.useMockData) {
+      console.log('Usando dados mockados para atualizar Pokémon');
+      
+      const pokemonIndex = MOCK_POKEMONS.findIndex(p => p.id === id);
+      if (pokemonIndex === -1) {
+        throw new Error(`Pokémon com ID ${id} não encontrado`);
+      }
+      
+      const updatedPokemon = {
+        ...MOCK_POKEMONS[pokemonIndex],
+        ...pokemonData
+      };
+      
+      MOCK_POKEMONS[pokemonIndex] = updatedPokemon;
+      
+      return updatedPokemon;
+    }
+    
+    try {
+      console.log(`Atualizando Pokémon com ID: ${id}`);
+      const url = `${this.apiUrl}/${id}`;
+      console.log('URL da requisição:', url);
+      console.log('Dados para atualização:', pokemonData);
+      
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify(pokemonData)
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Erro retornado pela API:', errorData);
+        throw new Error(`Erro ao atualizar Pokémon: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Pokémon atualizado com sucesso:', data);
+      
+      return data;
+    } catch (error) {
+      console.error(`Erro ao atualizar Pokémon com ID ${id}:`, error);
+      throw error;
+    }
+  }
 }
