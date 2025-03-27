@@ -94,3 +94,10 @@ And join the Nx community:
 ```sh
     npm run migration:run
 ```
+
+## executar frontend
+
+```sh
+    npm run start:frontend
+    npm run build:frontend
+```
