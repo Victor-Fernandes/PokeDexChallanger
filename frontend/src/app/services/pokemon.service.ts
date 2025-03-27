@@ -341,4 +341,50 @@ export class PokemonService {
       throw error;
     }
   }
+
+  /**
+   * Exclui um Pokémon pelo ID
+   * 
+   * @param id ID do Pokémon a ser excluído
+   * @returns Promise que resolve quando a exclusão for concluída
+   */
+  async deletePokemon(id: string): Promise<void> {
+    if (this.useMockData) {
+      console.log('Usando dados mockados para excluir Pokémon');
+      
+      const pokemonIndex = MOCK_POKEMONS.findIndex(p => p.id === id);
+      if (pokemonIndex === -1) {
+        throw new Error(`Pokémon com ID ${id} não encontrado`);
+      }
+      
+      MOCK_POKEMONS.splice(pokemonIndex, 1);
+      return;
+    }
+    
+    try {
+      console.log(`Excluindo Pokémon com ID: ${id}`);
+      const url = `${this.apiUrl}/${id}`;
+      console.log('URL da requisição:', url);
+      
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Erro retornado pela API:', errorData);
+        throw new Error(`Erro ao excluir Pokémon: ${response.status} ${response.statusText}`);
+      }
+      
+      console.log('Pokémon excluído com sucesso');
+    } catch (error) {
+      console.error(`Erro ao excluir Pokémon com ID ${id}:`, error);
+      throw error;
+    }
+  }
 }

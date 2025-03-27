@@ -26,6 +26,8 @@ const PokemonList: React.FC = () => {
   
   const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
   
+  const [successMessage, setSuccessMessage] = useState<string>('');
+
   const pokemonService = useMemo(() => new PokemonService(), []);
   
   const fetchPokemons = useCallback(async () => {
@@ -88,20 +90,30 @@ const PokemonList: React.FC = () => {
     setCurrentPage(1);
   };
 
-  const handlePokemonClick = async (pokemon: Pokemon) => {
-    try {
-      const detailedPokemon = await pokemonService.getPokemonById(pokemon.id);
-      setSelectedPokemon(detailedPokemon);
-    } catch (error) {
-      console.error('Erro ao buscar detalhes do Pokémon:', error);
-      setSelectedPokemon(pokemon);
-    }
+  const handlePokemonClick = (pokemon: Pokemon) => {
+    setSelectedPokemon(pokemon);
   };
 
   const handleCloseDetail = () => {
     setSelectedPokemon(null);
   };
-  
+
+  const handlePokemonDeleted = () => {
+    // Fechar o modal de detalhes
+    setSelectedPokemon(null);
+    
+    // Recarregar a lista de Pokémon
+    fetchPokemons();
+    
+    // Mostrar mensagem de sucesso
+    setSuccessMessage('Pokémon excluído com sucesso!');
+    
+    // Limpar a mensagem após alguns segundos
+    setTimeout(() => {
+      setSuccessMessage('');
+    }, 3000);
+  };
+
   const handleShowCreateForm = () => {
     setShowCreateForm(true);
   };
@@ -227,16 +239,23 @@ const PokemonList: React.FC = () => {
       )}
       
       {}
-      <PokemonDetail 
-        pokemon={selectedPokemon} 
-        onClose={handleCloseDetail} 
-      />
+      {selectedPokemon && (
+        <PokemonDetail 
+          pokemon={selectedPokemon} 
+          onClose={handleCloseDetail}
+          onPokemonDeleted={handlePokemonDeleted}
+        />
+      )}
       
       {showCreateForm && (
         <PokemonForm 
           onPokemonCreated={handlePokemonCreated}
           onCancel={handleCloseCreateForm}
         />
+      )}
+      
+      {successMessage && (
+        <div className="success-message">{successMessage}</div>
       )}
     </div>
   );
