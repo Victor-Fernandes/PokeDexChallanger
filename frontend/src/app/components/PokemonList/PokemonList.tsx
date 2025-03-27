@@ -1,9 +1,10 @@
-import React, { useEffect, useState, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { PokemonService } from '../../services/pokemon.service';
 import { Pokemon } from '../../interfaces/pokemon.interface';
 import { PokemonFilter } from '../../interfaces/pokemon-filter.interface';
-import { PokemonService } from '../../services/pokemon.service';
 import PokemonCard from '../PokemonCard/PokemonCard';
 import PokemonDetail from '../PokemonDetail/PokemonDetail';
+import PokemonForm from '../PokemonForm/PokemonForm';
 import './PokemonList.css';
 
 const PokemonList: React.FC = () => {
@@ -22,6 +23,8 @@ const PokemonList: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   
   const [selectedPokemon, setSelectedPokemon] = useState<Pokemon | null>(null);
+  
+  const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
   
   const pokemonService = useMemo(() => new PokemonService(), []);
   
@@ -42,9 +45,9 @@ const PokemonList: React.FC = () => {
       setPokemons(response.data);
       setTotalPages(response.totalPages);
       setTotalItems(response.total);
-    } catch (err) {
-      setError('Erro ao carregar os Pokémon. Por favor, tente novamente.');
-      console.error('Erro ao buscar Pokémon:', err);
+    } catch (error) {
+      console.error('Erro ao buscar Pokémon:', error);
+      setError('Não foi possível carregar os Pokémon. Tente novamente mais tarde.');
     } finally {
       setLoading(false);
     }
@@ -94,14 +97,35 @@ const PokemonList: React.FC = () => {
       setSelectedPokemon(pokemon);
     }
   };
-  
+
   const handleCloseDetail = () => {
     setSelectedPokemon(null);
   };
   
+  const handleShowCreateForm = () => {
+    setShowCreateForm(true);
+  };
+  
+  const handleCloseCreateForm = () => {
+    setShowCreateForm(false);
+  };
+  
+  const handlePokemonCreated = () => {
+    fetchPokemons();
+    setShowCreateForm(false);
+  };
+
   return (
     <div className="pokemon-list-container">
-      <h1>Lista de Pokémon</h1>
+      <div className="list-header">
+        <h1>Lista de Pokémon</h1>
+        <button 
+          className="create-pokemon-button" 
+          onClick={handleShowCreateForm}
+        >
+          Adicionar Pokémon
+        </button>
+      </div>
       
       {}
       <div className="filters-section">
@@ -116,7 +140,6 @@ const PokemonList: React.FC = () => {
               placeholder="Filtrar por nome"
             />
           </div>
-          
           <div className="filter-group">
             <label htmlFor="type-filter">Tipo:</label>
             <input
@@ -128,10 +151,13 @@ const PokemonList: React.FC = () => {
             />
           </div>
         </div>
-        
         <div className="filter-buttons">
-          <button onClick={handleApplyFilters}>Aplicar Filtros</button>
-          <button onClick={handleClearFilters}>Limpar Filtros</button>
+          <button onClick={handleApplyFilters} className="apply-filter-button">
+            Aplicar Filtros
+          </button>
+          <button onClick={handleClearFilters} className="clear-filter-button">
+            Limpar Filtros
+          </button>
         </div>
       </div>
       
@@ -147,9 +173,9 @@ const PokemonList: React.FC = () => {
       ) : (
         <div className="pokemon-grid">
           {pokemons.map((pokemon) => (
-            <PokemonCard 
-              key={pokemon.id} 
-              pokemon={pokemon} 
+            <PokemonCard
+              key={pokemon.id}
+              pokemon={pokemon}
               onClick={() => handlePokemonClick(pokemon)}
             />
           ))}
@@ -161,9 +187,9 @@ const PokemonList: React.FC = () => {
         <div className="pagination-controls">
           <div className="pagination-info">
             <span>
-              Mostrando {pokemons.length} de {totalItems} Pokémon
+              Mostrando {(currentPage - 1) * itemsPerPage + 1} a{' '}
+              {Math.min(currentPage * itemsPerPage, totalItems)} de {totalItems} Pokémon
             </span>
-            
             <div className="items-per-page">
               <label htmlFor="items-per-page">Itens por página:</label>
               <select
@@ -178,22 +204,21 @@ const PokemonList: React.FC = () => {
               </select>
             </div>
           </div>
-          
           <div className="pagination-buttons">
-            <button 
-              onClick={handlePrevPage} 
+            <button
+              onClick={handlePrevPage}
               disabled={currentPage === 1}
+              className="pagination-button"
             >
               Anterior
             </button>
-            
             <span className="page-indicator">
               Página {currentPage} de {totalPages}
             </span>
-            
-            <button 
-              onClick={handleNextPage} 
+            <button
+              onClick={handleNextPage}
               disabled={currentPage === totalPages}
+              className="pagination-button"
             >
               Próxima
             </button>
@@ -206,6 +231,13 @@ const PokemonList: React.FC = () => {
         pokemon={selectedPokemon} 
         onClose={handleCloseDetail} 
       />
+      
+      {showCreateForm && (
+        <PokemonForm 
+          onPokemonCreated={handlePokemonCreated}
+          onCancel={handleCloseCreateForm}
+        />
+      )}
     </div>
   );
 };

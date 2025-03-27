@@ -2,7 +2,7 @@ import { PokemonFilter } from '../interfaces/pokemon-filter.interface';
 import { PokemonPaginatedResponse } from '../interfaces/pokemon-paginated-response.interface';
 import { Pokemon } from '../interfaces/pokemon.interface';
 
-// Dados mockados para desenvolvimento
+// mock de dados
 const MOCK_POKEMONS: Pokemon[] = [
   {
     id: "19eea301-0abf-4db8-bc8c-efc2ca9002cb",
@@ -141,7 +141,6 @@ export class PokemonService {
     const page = filter.page || 1;
     const itemsPerPage = filter.itemsPerPage || 5;
     
-    // Filtra os Pokémon mockados de acordo com os filtros
     let filteredPokemons = [...MOCK_POKEMONS];
     
     if (filter.name) {
@@ -157,19 +156,16 @@ export class PokemonService {
         pokemon.types.some(type => type.toLowerCase().includes(typeFilter))
       );
     }
-    
-    // Calcula o total de páginas
+
     const total = filteredPokemons.length;
     const totalPages = Math.ceil(total / itemsPerPage);
     
-    // Calcula o índice inicial e final para a página atual
+
     const startIndex = (page - 1) * itemsPerPage;
     const endIndex = Math.min(startIndex + itemsPerPage, total);
     
-    // Obtém os Pokémon para a página atual
     const paginatedPokemons = filteredPokemons.slice(startIndex, endIndex);
     
-    // Retorna a resposta paginada
     return {
       data: paginatedPokemons,
       page,
@@ -186,7 +182,7 @@ export class PokemonService {
    * @returns Promise com os dados do Pokémon
    */
   async getPokemonById(id: string): Promise<Pokemon> {
-    // Se estiver usando dados mockados, retorna o Pokémon mockado
+
     if (this.useMockData) {
       console.log('Usando dados mockados para buscar Pokémon por ID');
       const pokemon = MOCK_POKEMONS.find(p => p.id === id);
@@ -201,22 +197,19 @@ export class PokemonService {
       const url = `${this.apiUrl}/${id}`;
       console.log('URL da requisição:', url);
       
-      // Faz a requisição à API
       const response = await fetch(url, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
           'Accept': 'application/json',
         },
-        credentials: 'include', // Inclui cookies nas requisições cross-origin
+        credentials: 'include',
       });
       
-      // Verifica se a resposta foi bem-sucedida
       if (!response.ok) {
         throw new Error(`Erro ao buscar Pokémon: ${response.status} ${response.statusText}`);
       }
       
-      // Converte a resposta para JSON
       const data = await response.json();
       console.log('Dados do Pokémon recebidos:', data);
       
@@ -224,7 +217,6 @@ export class PokemonService {
     } catch (error) {
       console.error(`Erro ao buscar Pokémon com ID ${id}:`, error);
       
-      // Em caso de erro, tenta usar dados mockados como fallback
       if (!this.useMockData) {
         console.log('Tentando usar dados mockados como fallback');
         const pokemon = MOCK_POKEMONS.find(p => p.id === id);
@@ -232,8 +224,62 @@ export class PokemonService {
           return pokemon;
         }
       }
+      throw error;
+    }
+  }
+
+  /**
+   * Cria um novo Pokémon com base no nome
+   * 
+   * @param name Nome do Pokémon a ser criado
+   * @returns Promise com os dados do Pokémon criado
+   */
+  async createPokemon(name: string): Promise<Pokemon> {
+    if (this.useMockData) {
+      console.log('Usando dados mockados para criar Pokémon');
       
-      // Se não encontrar nos dados mockados, propaga o erro
+      const newPokemon: Pokemon = {
+        id: `mock-${Date.now()}`,
+        name: name.toLowerCase(),
+        pokemon_number: MOCK_POKEMONS.length + 1,
+        types: ["normal"],
+        description: `Descrição mockada para ${name}`,
+        height: 10,
+        weight: 100,
+        imageUrl: "https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/132.png",
+        moves: ["tackle", "growl"]
+      };
+      
+      MOCK_POKEMONS.push(newPokemon);
+      
+      return newPokemon;
+    }
+    
+    try {
+      console.log(`Criando Pokémon com nome: ${name}`);
+      
+      const response = await fetch(this.apiUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ name: name.toLowerCase() })
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        console.error('Erro retornado pela API:', errorData);
+        throw new Error(`Erro ao criar Pokémon: ${response.status} ${response.statusText}`);
+      }
+      
+      const data = await response.json();
+      console.log('Pokémon criado com sucesso:', data);
+      
+      return data;
+    } catch (error) {
+      console.error(`Erro ao criar Pokémon com nome ${name}:`, error);
       throw error;
     }
   }
